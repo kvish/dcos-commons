@@ -71,6 +71,7 @@ fi
 echo 'Updating disk resources...'
 
 export MESOS_WORK_DIR MESOS_RESOURCES
+source /opt/mesosphere/etc/mesos-slave-common
 eval $(sed -E "s/^([A-Z_]+)=(.*)$/\\1='\\2'/" /opt/mesosphere/etc/mesos-slave-common)  # Set up `MESOS_WORK_DIR`.
 eval $(sed -E "s/^([A-Z_]+)=(.*)$/\\1='\\2'/" /opt/mesosphere/etc/mesos-slave)         # Set up `MESOS_RESOURCES`.
 /opt/mesosphere/bin/make_disk_resources.py /var/lib/dcos/mesos-resources
