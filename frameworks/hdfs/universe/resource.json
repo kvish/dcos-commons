@@ -9,7 +9,12 @@
       "bootstrap-zip": "{{artifact-dir}}/bootstrap.zip",
       "scheduler-zip": "{{artifact-dir}}/hdfs-scheduler.zip",
       "zone-resolver-sh": "{{artifact-dir}}/zone-resolver.sh"
-    }
+    },
+    "container": {
+      "docker": {
+	"hdfs-image": "mesostcs/hdfs-docker:0.1"      
+       }
+     }
   },
   "images": {
     "icon-small": "https://downloads.mesosphere.com/assets/universe/000/hdfs-icon-small.png",
