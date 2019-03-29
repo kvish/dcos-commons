@@ -12,7 +12,8 @@
     },
     "container": {
       "docker": {
-	"hdfs-image": "mesostcs/hdfs-docker:6.1.1-DCOS-root-0.3"      
+	"hdfs-root": "mesostcs/hdfs-docker:6.1.1-DCOS-root-0.3",
+        "hdfs-nobody": "mesostcs/hdfs-docker:6.1.1-DCOS-nobody-0.3"	
        }
      }
   },

@@ -3,7 +3,12 @@
   "cpus": 1.0,
   "mem": 1024,
   "instances": 1,
-  "user": "{{service.user}}",
+  {{#service.check_for_nobody_leave_unchecked_for_root}}
+  "user": "nobody",
+  {{/service.check_for_nobody_leave_unchecked_for_root}}
+  {{^service.check_for_nobody_leave_unchecked_for_root}}
+  "user": "root",
+  {{/service.check_for_nobody_leave_unchecked_for_root}}
   "cmd": "export LD_LIBRARY_PATH=$MESOS_SANDBOX/libmesos-bundle/lib:$LD_LIBRARY_PATH; export MESOS_NATIVE_JAVA_LIBRARY=$(ls $MESOS_SANDBOX/libmesos-bundle/lib/libmesos-*.so); export JAVA_HOME=$(ls -d $MESOS_SANDBOX/jdk*/jre/); export JAVA_HOME=${JAVA_HOME%/}; export PATH=$(ls -d $JAVA_HOME/bin):$PATH && export JAVA_OPTS=\"-Xms256M -Xmx512M -XX:-HeapDumpOnOutOfMemoryError\" && ./bootstrap -resolve=false -template=false && ./hdfs-scheduler/bin/hdfs ./hdfs-scheduler/svc.yml",
   "labels": {
     "DCOS_COMMONS_API_VERSION": "v1",
@@ -63,7 +68,9 @@
     "BOOTSTRAP_URI": "{{resource.assets.uris.bootstrap-zip}}",
     "JAVA_URI": "{{resource.assets.uris.jre-tar-gz}}",
     "ZONE_RESOLVER": "{{resource.assets.uris.zone-resolver-sh}}",
-    "HDFS_IMAGE": "{{resource.assets.container.docker.hdfs-image}}",
+    "IMAGE_IS_NOBODY": "{{service.check_for_nobody_leave_unchecked_for_root}}",
+    "HDFS_ROOT": "{{resource.assets.container.docker.hdfs-root}}",
+    "HDFS_NOBODY": "{{resource.assets.container.docker.hdfs-nobody}}",
 
     {{#service.region}}
     "SERVICE_REGION": "{{service.region}}",
@@ -132,7 +139,12 @@
     "TASKCFG_ALL_SECURITY_KERBEROS_KDC_HOSTNAME": "{{service.security.kerberos.kdc.hostname}}",
     "TASKCFG_ALL_SECURITY_KERBEROS_KDC_PORT": "{{service.security.kerberos.kdc.port}}",
     {{/service.security.kerberos.enabled}}
-    "TASKCFG_ALL_TASK_USER": "{{service.user}}",
+    {{#service.check_for_nobody_leave_unchecked_for_root}}
+    "TASKCFG_ALL_TASK_USER": "nobody",
+    {{/service.check_for_nobody_leave_unchecked_for_root}}
+    {{^service.check_for_nobody_leave_unchecked_for_root}}
+    "TASKCFG_ALL_TASK_USER": "root",
+    {{/service.check_for_nobody_leave_unchecked_for_root}}
     "TASKCFG_ALL_HADOOP_HDFS_CONFIGURATION_VERSION": "{{hdfs.hadoop_hdfs_configuration_version}}",
     "TASKCFG_ALL_ADMINISTRATORS": "{{hdfs.administrators}}",
     "TASKCFG_ALL_NAME_NODE_RPC_PORT":"{{hdfs.name_node_rpc_port}}",

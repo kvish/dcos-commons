@@ -5,7 +5,14 @@ scheduler:
 pods:
   journal:
     count: 3
-    image: {{HDFS_IMAGE}}
+
+    {{#IMAGE_IS_NOBODY}}
+    image: {{HDFS_NOBODY}}
+    {{/IMAGE_IS_NOBODY}}
+    {{^IMAGE_IS_NOBODY}}
+    image: {{HDFS_ROOT}}
+    {{/IMAGE_IS_NOBODY}}
+
     uris:
       - {{HDFS_JAVA_URI}}
       - {{BOOTSTRAP_URI}}
@@ -143,7 +150,14 @@ pods:
         {{/SECURITY_TRANSPORT_ENCRYPTION_ENABLED}}
   name:
     count: 2
-    image: {{HDFS_IMAGE}}
+
+    {{#IMAGE_IS_NOBODY}}
+    image: {{HDFS_NOBODY}}
+    {{/IMAGE_IS_NOBODY}}
+    {{^IMAGE_IS_NOBODY}}
+    image: {{HDFS_ROOT}}
+    {{/IMAGE_IS_NOBODY}}
+   
     uris:
       - {{HDFS_JAVA_URI}}
       - {{BOOTSTRAP_URI}}
@@ -415,7 +429,14 @@ pods:
           ZKFC: true
   data:
     count: {{DATA_COUNT}}
-    image: {{HDFS_IMAGE}}
+
+    {{#IMAGE_IS_NOBODY}}
+    image: {{HDFS_NOBODY}}
+    {{/IMAGE_IS_NOBODY}}
+    {{^IMAGE_IS_NOBODY}}
+    image: {{HDFS_ROOT}}
+    {{/IMAGE_IS_NOBODY}}
+    
     uris:
       - {{HDFS_JAVA_URI}}
       - {{BOOTSTRAP_URI}}
