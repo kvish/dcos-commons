@@ -21,6 +21,8 @@ RUN yum-config-manager --add-repo https://archive.cloudera.com/cdh6/6.1.1/redhat
     && rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-cloudera
 
 RUN yum update -y -q \
-    && yum install -y -q hadoop
+    && yum install -y -q hadoop \
+    && chown -R ${HDFS_USER}:${HDFS_GROUP} /etc/hadoop /etc/alternatives/hadoop-conf /var/log/hadoop-* \
+    && chmod g+rwx -R /etc/hadoop /etc/alternatives/hadoop-conf /var/log/hadoop-*
 
 CMD [""]    
