@@ -1,9 +1,6 @@
 FROM centos:7
 MAINTAINER Mesosphere <help@mesosphere.io>
 
-ARG HDFS_USER=hdfs
-ARG HDFS_GROUP=hdfs
-
 RUN groupadd -g 65534 nogroup \
     && usermod -u 99 -g 99 -c "Nobody user for RHEL based system" nobody \
     && echo "nobody:x:65534:65534:Nobody user for Debian based system:/nonexistent:/sbin/nologin" >> /etc/passwd \
@@ -21,8 +18,6 @@ RUN yum-config-manager --add-repo https://archive.cloudera.com/cdh6/6.1.1/redhat
     && rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-cloudera
 
 RUN yum update -y -q \
-    && yum install -y -q hadoop \
-    && chown -R ${HDFS_USER}:${HDFS_GROUP} /etc/hadoop /etc/alternatives/hadoop-conf /var/log/hadoop-* \
-    && chmod g+rwx -R /etc/hadoop /etc/alternatives/hadoop-conf /var/log/hadoop-*
+    && yum install -y -q hadoop
 
 CMD [""]    

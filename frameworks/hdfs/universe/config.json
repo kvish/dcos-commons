@@ -11,10 +11,10 @@
           "pattern": "^(\\/?((\\.\\.)|(([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9])\\.)*([a-z0-9]|[a-z0-9][a-z0-9\\-]*[a-z0-9]))?($|\\/))+$",
           "default": "hdfs"
         },
-        "check_for_nobody_leave_unchecked_for_root": {
-          "description": "The user that the service will run as. If checked, the service will run as nobody. If unchecked, the service will run as root.",
-          "type": "boolean",
-          "default": true,
+        "user": {
+          "description": "The user that the service will run as.",
+          "type": "string",
+          "default": "nobody",
           "title": "User"
         },
         "service_account": {

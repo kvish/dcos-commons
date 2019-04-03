@@ -6,12 +6,7 @@ pods:
   journal:
     count: 3
 
-    {{#IMAGE_IS_NOBODY}}
-    image: {{HDFS_NOBODY}}
-    {{/IMAGE_IS_NOBODY}}
-    {{^IMAGE_IS_NOBODY}}
-    image: {{HDFS_ROOT}}
-    {{/IMAGE_IS_NOBODY}}
+    image: {{HDFS_IMAGE}}
 
     uris:
       - {{HDFS_JAVA_URI}}
@@ -65,10 +60,13 @@ pods:
         goal: RUNNING
         cmd: |
           set -e
+          mkdir -p $MESOS_SANDBOX/hadoop/conf $MESOS_SANDBOX/hadoop/logs
+          cp -n /etc/hadoop/conf/* $MESOS_SANDBOX/hadoop/conf/
           export JAVA_HOME=$(ls -d $MESOS_SANDBOX/jdk*/jre/)
-          #cp -v hdfs {{TASKCFG_ALL_HDFS_VERSION}}/bin/
+          export HADOOP_CONF_DIR=$MESOS_SANDBOX/hadoop/conf
+          export HADOOP_LOG_DIR=$MESOS_SANDBOX/hadoop/logs
           {{#SECURITY_KERBEROS_ENABLED}}
-          export HADOOP_OPTS="-Djava.security.krb5.conf=/etc/hadoop/conf/krb5.conf $HADOOP_OPTS"
+          export HADOOP_OPTS="-Djava.security.krb5.conf=$MESOS_SANDBOX/hadoop/conf/krb5.conf $HADOOP_OPTS"
           {{#TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
           export HADOOP_OPTS="-Dsun.security.krb5.debug=true $HADOOP_OPTS"
           {{/TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
@@ -80,24 +78,24 @@ pods:
           {{#SECURITY_KERBEROS_ENABLED}}
           krb5-conf:
             template: krb5.conf
-            dest: /etc/hadoop/conf/krb5.conf
+            dest: hadoop/conf/krb5.conf
           {{/SECURITY_KERBEROS_ENABLED}}
           core-site:
             template: core-site.xml
-            dest: /etc/hadoop/conf/core-site.xml
+            dest: hadoop/conf/core-site.xml
           hdfs-site:
             template: hdfs-site.xml
-            dest: /etc/hadoop/conf/hdfs-site.xml
+            dest: hadoop/conf/hdfs-site.xml
           hadoop-metrics2:
             template: journal-hadoop-metrics2.properties
-            dest: /etc/hadoop/conf/hadoop-metrics2.properties
+            dest: hadoop/conf/hadoop-metrics2.properties
           {{#SECURITY_TRANSPORT_ENCRYPTION_ENABLED}}
           ssl-server:
             template: ssl-server.xml
-            dest: /etc/hadoop/conf/ssl-server.xml
+            dest: hadoop/conf/ssl-server.xml
           ssl-client:
             template: ssl-client.xml
-            dest: /etc/hadoop/conf/ssl-client.xml
+            dest: hadoop/conf/ssl-client.xml
           {{/SECURITY_TRANSPORT_ENCRYPTION_ENABLED}}
         env:
           JOURNALNODE: true
@@ -119,12 +117,14 @@ pods:
             fi
             if [ ! -f rolledEdits ]; then
               export JAVA_HOME=$(ls -d $MESOS_SANDBOX/jdk*/jre/)
+              export HADOOP_CONF_DIR=$MESOS_SANDBOX/hadoop/conf
+              export HADOOP_LOG_DIR=$MESOS_SANDBOX/hadoop/logs
               {{#SECURITY_KERBEROS_ENABLED}}
-              export HADOOP_OPTS="-Djava.security.krb5.conf=/etc/hadoop/conf/krb5.conf $HADOOP_OPTS"
+              export HADOOP_OPTS="-Djava.security.krb5.conf=$MESOS_SANDBOX/hadoop/conf/krb5.conf $HADOOP_OPTS"
               {{#TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
               export HADOOP_OPTS="-Dsun.security.krb5.debug=true $HADOOP_OPTS"
               {{/TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
-              KRB5_CONFIG=/etc/hadoop/conf/krb5.conf kinit -k -t $MESOS_SANDBOX/hdfs.keytab $SECURITY_KERBEROS_PRIMARY/$TASK_NAME.$FRAMEWORK_HOST@$SECURITY_KERBEROS_REALM
+              KRB5_CONFIG=$MESOS_SANDBOX/hadoop/conf/krb5.conf kinit -k -t $MESOS_SANDBOX/hdfs.keytab $SECURITY_KERBEROS_PRIMARY/$TASK_NAME.$FRAMEWORK_HOST@$SECURITY_KERBEROS_REALM
               {{/SECURITY_KERBEROS_ENABLED}}
               # By doing a rollEdits, the name node flushes the edits to the journal nodes so that the standby
               # name node can read the latest edits. When a journal node restart, it will not resume processing
@@ -151,12 +151,7 @@ pods:
   name:
     count: 2
 
-    {{#IMAGE_IS_NOBODY}}
-    image: {{HDFS_NOBODY}}
-    {{/IMAGE_IS_NOBODY}}
-    {{^IMAGE_IS_NOBODY}}
-    image: {{HDFS_ROOT}}
-    {{/IMAGE_IS_NOBODY}}
+    image: {{HDFS_IMAGE}}
    
     uris:
       - {{HDFS_JAVA_URI}}
@@ -206,10 +201,13 @@ pods:
         goal: RUNNING
         cmd: |
           set -e
+          mkdir -p $MESOS_SANDBOX/hadoop/conf $MESOS_SANDBOX/hadoop/logs
+          cp -n /etc/hadoop/conf/* $MESOS_SANDBOX/hadoop/conf/
           export JAVA_HOME=$(ls -d $MESOS_SANDBOX/jdk*/jre/)
-          #cp -v hdfs {{TASKCFG_ALL_HDFS_VERSION}}/bin/
+          export HADOOP_CONF_DIR=$MESOS_SANDBOX/hadoop/conf
+          export HADOOP_LOG_DIR=$MESOS_SANDBOX/hadoop/logs         
           {{#SECURITY_KERBEROS_ENABLED}}
-          export HADOOP_OPTS="-Djava.security.krb5.conf=/etc/hadoop/conf/krb5.conf $HADOOP_OPTS"
+          export HADOOP_OPTS="-Djava.security.krb5.conf=$MESOS_SANDBOX/hadoop/conf/krb5.conf $HADOOP_OPTS"
           {{#TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
           export HADOOP_OPTS="-Dsun.security.krb5.debug=true $HADOOP_OPTS"
           {{/TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
@@ -222,22 +220,24 @@ pods:
           {{/SECURITY_KERBEROS_ENABLED}}
           ./bootstrap
           {{#NAME_NODE_PLACEMENT}}
-          cp -v zone-resolver.sh /etc/hadoop/conf/zone-resolver.sh
-          chmod u+x /etc/hadoop/conf/zone-resolver.sh
+          cp -v zone-resolver.sh $MESOS_SANDBOX/hadoop/conf/zone-resolver.sh
+          chmod u+x $MESOS_SANDBOX/hadoop/conf/zone-resolver.sh
           {{/NAME_NODE_PLACEMENT}}
-          #sleep 1000s
+         
           hdfs namenode
         resource-set: name-resources
         readiness-check:
           cmd: |
             set -e
             export JAVA_HOME=$(ls -d $MESOS_SANDBOX/jdk*/jre/)
+            export HADOOP_CONF_DIR=$MESOS_SANDBOX/hadoop/conf
+            export HADOOP_LOG_DIR=$MESOS_SANDBOX/hadoop/logs
             {{#SECURITY_KERBEROS_ENABLED}}
-            export HADOOP_OPTS="-Djava.security.krb5.conf=/etc/hadoop/conf/krb5.conf $HADOOP_OPTS"
+            export HADOOP_OPTS="-Djava.security.krb5.conf=$MESOS_SANDBOX/hadoop/conf/krb5.conf $HADOOP_OPTS"
             {{#TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
             export HADOOP_OPTS="-Dsun.security.krb5.debug=true $HADOOP_OPTS"
             {{/TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
-            KRB5_CONFIG=/etc/hadoop/conf/krb5.conf kinit -k -t $MESOS_SANDBOX/hdfs.keytab $SECURITY_KERBEROS_PRIMARY/$TASK_NAME.$FRAMEWORK_HOST@$SECURITY_KERBEROS_REALM
+            KRB5_CONFIG=$MESOS_SANDBOX/hadoop/conf/krb5.conf kinit -k -t $MESOS_SANDBOX/hdfs.keytab $SECURITY_KERBEROS_PRIMARY/$TASK_NAME.$FRAMEWORK_HOST@$SECURITY_KERBEROS_REALM
             {{/SECURITY_KERBEROS_ENABLED}}
             hdfs haadmin -getServiceState $TASK_NAME
           interval: {{NAME_NODE_READINESS_CHECK_INTERVAL}}
@@ -247,24 +247,24 @@ pods:
           {{#SECURITY_KERBEROS_ENABLED}}
           krb5-conf:
             template: krb5.conf
-            dest: /etc/hadoop/conf/krb5.conf
+            dest: hadoop/conf/krb5.conf
           {{/SECURITY_KERBEROS_ENABLED}}
           core-site:
             template: core-site.xml
-            dest: /etc/hadoop/conf/core-site.xml
+            dest: hadoop/conf/core-site.xml
           hdfs-site:
             template: hdfs-site.xml
-            dest: /etc/hadoop/conf/hdfs-site.xml
+            dest: hadoop/conf/hdfs-site.xml
           hadoop-metrics2:
             template: name-hadoop-metrics2.properties
-            dest: /etc/hadoop/conf/hadoop-metrics2.properties
+            dest: hadoop/conf/hadoop-metrics2.properties
           {{#SECURITY_TRANSPORT_ENCRYPTION_ENABLED}}
           ssl-server:
             template: ssl-server.xml
-            dest: /etc/hadoop/conf/ssl-server.xml
+            dest: hadoop/conf/ssl-server.xml
           ssl-client:
             template: ssl-client.xml
-            dest: /etc/hadoop/conf/ssl-client.xml
+            dest: hadoop/conf/ssl-client.xml
           {{/SECURITY_TRANSPORT_ENCRYPTION_ENABLED}}
         env:
           NAMENODE: true
@@ -277,10 +277,13 @@ pods:
         goal: ONCE
         cmd: |
           set -e
+          mkdir -p $MESOS_SANDBOX/hadoop/conf $MESOS_SANDBOX/hadoop/logs
+          cp -n /etc/hadoop/conf/* $MESOS_SANDBOX/hadoop/conf/
           export JAVA_HOME=$(ls -d $MESOS_SANDBOX/jdk*/jre/)
-          #cp -v hdfs {{TASKCFG_ALL_HDFS_VERSION}}/bin/
+          export HADOOP_CONF_DIR=$MESOS_SANDBOX/hadoop/conf
+          export HADOOP_LOG_DIR=$MESOS_SANDBOX/hadoop/logs        
           {{#SECURITY_KERBEROS_ENABLED}}
-          export HADOOP_OPTS="-Djava.security.krb5.conf=/etc/hadoop/conf/krb5.conf $HADOOP_OPTS"
+          export HADOOP_OPTS="-Djava.security.krb5.conf=$MESOS_SANDBOX/hadoop/conf/krb5.conf $HADOOP_OPTS"
           {{#TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
           export HADOOP_OPTS="-Dsun.security.krb5.debug=true $HADOOP_OPTS"
           {{/TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
@@ -292,21 +295,21 @@ pods:
           {{#SECURITY_KERBEROS_ENABLED}}
           krb5-conf:
             template: krb5.conf
-            dest: /etc/hadoop/conf/krb5.conf
+            dest: hadoop/conf/krb5.conf
           {{/SECURITY_KERBEROS_ENABLED}}
           core-site:
             template: core-site.xml
-            dest: /etc/hadoop/conf/core-site.xml
+            dest: hadoop/conf/core-site.xml
           hdfs-site:
             template: hdfs-site.xml
-            dest: /etc/hadoop/conf/hdfs-site.xml
+            dest: hadoop/conf/hdfs-site.xml
           {{#SECURITY_TRANSPORT_ENCRYPTION_ENABLED}}
           ssl-server:
             template: ssl-server.xml
-            dest: /etc/hadoop/conf/ssl-server.xml
+            dest: hadoop/conf/ssl-server.xml
           ssl-client:
             template: ssl-client.xml
-            dest: /etc/hadoop/conf/ssl-client.xml
+            dest: hadoop/conf/ssl-client.xml
           {{/SECURITY_TRANSPORT_ENCRYPTION_ENABLED}}
         env:
           NAMENODE: true
@@ -314,10 +317,13 @@ pods:
         goal: ONCE
         cmd: |
           set -e
+          mkdir -p $MESOS_SANDBOX/hadoop/conf $MESOS_SANDBOX/hadoop/logs
+          cp -n /etc/hadoop/conf/* $MESOS_SANDBOX/hadoop/conf/
           export JAVA_HOME=$(ls -d $MESOS_SANDBOX/jdk*/jre/)
-          #cp -v hdfs {{TASKCFG_ALL_HDFS_VERSION}}/bin/
+          export HADOOP_CONF_DIR=$MESOS_SANDBOX/hadoop/conf
+          export HADOOP_LOG_DIR=$MESOS_SANDBOX/hadoop/logs
           {{#SECURITY_KERBEROS_ENABLED}}
-          export HADOOP_OPTS="-Djava.security.krb5.conf=/etc/hadoop/conf/krb5.conf $HADOOP_OPTS"
+          export HADOOP_OPTS="-Djava.security.krb5.conf=$MESOS_SANDBOX/hadoop/conf/krb5.conf $HADOOP_OPTS"
           {{#TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
           export HADOOP_OPTS="-Dsun.security.krb5.debug=true $HADOOP_OPTS"
           {{/TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
@@ -329,21 +335,21 @@ pods:
           {{#SECURITY_KERBEROS_ENABLED}}
           krb5-conf:
             template: krb5.conf
-            dest: /etc/hadoop/conf/krb5.conf
+            dest: hadoop/conf/krb5.conf
           {{/SECURITY_KERBEROS_ENABLED}}
           core-site:
             template: core-site.xml
-            dest: /etc/hadoop/conf/core-site.xml
+            dest: hadoop/conf/core-site.xml
           hdfs-bootstrap-site:
             template: hdfs-site.xml
-            dest: /etc/hadoop/conf/hdfs-site.xml
+            dest: hadoop/conf/hdfs-site.xml
           {{#SECURITY_TRANSPORT_ENCRYPTION_ENABLED}}
           ssl-server:
             template: ssl-server.xml
-            dest: /etc/hadoop/conf/ssl-server.xml
+            dest: hadoop/conf/ssl-server.xml
           ssl-client:
             template: ssl-client.xml
-            dest: /etc/hadoop/conf/ssl-client.xml
+            dest: hadoop/conf/ssl-client.xml
           {{/SECURITY_TRANSPORT_ENCRYPTION_ENABLED}}
         env:
           NAMENODE: true
@@ -357,10 +363,13 @@ pods:
         goal: RUNNING
         cmd: |
           set -e
+          mkdir -p $MESOS_SANDBOX/hadoop/conf $MESOS_SANDBOX/hadoop/logs
+          cp -n /etc/hadoop/conf/* $MESOS_SANDBOX/hadoop/conf/
           export JAVA_HOME=$(ls -d $MESOS_SANDBOX/jdk*/jre/)
-          #cp -v hdfs {{TASKCFG_ALL_HDFS_VERSION}}/bin/
+          export HADOOP_CONF_DIR=$MESOS_SANDBOX/hadoop/conf
+          export HADOOP_LOG_DIR=$MESOS_SANDBOX/hadoop/logs
           {{#SECURITY_KERBEROS_ENABLED}}
-          export HADOOP_OPTS="-Djava.security.krb5.conf=/etc/hadoop/conf/krb5.conf $HADOOP_OPTS"
+          export HADOOP_OPTS="-Djava.security.krb5.conf=$MESOS_SANDBOX/hadoop/conf/krb5.conf $HADOOP_OPTS"
           {{#TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
           export HADOOP_OPTS="-Dsun.security.krb5.debug=true $HADOOP_OPTS"
           {{/TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
@@ -372,21 +381,21 @@ pods:
           {{#SECURITY_KERBEROS_ENABLED}}
           krb5-conf:
             template: krb5.conf
-            dest: /etc/hadoop/conf/krb5.conf
+            dest: hadoop/conf/krb5.conf
           {{/SECURITY_KERBEROS_ENABLED}}
           core-site:
             template: core-site.xml
-            dest: /etc/hadoop/conf/core-site.xml
+            dest: hadoop/conf/core-site.xml
           hdfs-site:
             template: hdfs-site.xml
-            dest: /etc/hadoop/conf/hdfs-site.xml
+            dest: hadoop/conf/hdfs-site.xml
           {{#SECURITY_TRANSPORT_ENCRYPTION_ENABLED}}
           ssl-server:
             template: ssl-server.xml
-            dest: /etc/hadoop/conf/ssl-server.xml
+            dest: hadoop/conf/ssl-server.xml
           ssl-client:
             template: ssl-client.xml
-            dest: /etc/hadoop/conf/ssl-client.xml
+            dest: hadoop/conf/ssl-client.xml
           {{/SECURITY_TRANSPORT_ENCRYPTION_ENABLED}}
         env:
           ZKFC: true
@@ -394,10 +403,13 @@ pods:
         goal: ONCE
         cmd: |
           set -e
+          mkdir -p $MESOS_SANDBOX/hadoop/conf $MESOS_SANDBOX/hadoop/logs
+          cp -n /etc/hadoop/conf/* $MESOS_SANDBOX/hadoop/conf/
           export JAVA_HOME=$(ls -d $MESOS_SANDBOX/jdk*/jre/)
-          #cp -v hdfs {{TASKCFG_ALL_HDFS_VERSION}}/bin/
+          export HADOOP_CONF_DIR=$MESOS_SANDBOX/hadoop/conf
+          export HADOOP_LOG_DIR=$MESOS_SANDBOX/hadoop/logs
           {{#SECURITY_KERBEROS_ENABLED}}
-          export HADOOP_OPTS="-Djava.security.krb5.conf=/etc/hadoop/conf/krb5.conf $HADOOP_OPTS"
+          export HADOOP_OPTS="-Djava.security.krb5.conf=$MESOS_SANDBOX/hadoop/conf/krb5.conf $HADOOP_OPTS"
           {{#TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
           export HADOOP_OPTS="-Dsun.security.krb5.debug=true $HADOOP_OPTS"
           {{/TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
@@ -409,33 +421,28 @@ pods:
           {{#SECURITY_KERBEROS_ENABLED}}
           krb5-conf:
             template: krb5.conf
-            dest: /etc/hadoop/conf/krb5.conf
+            dest: hadoop/conf/krb5.conf
           {{/SECURITY_KERBEROS_ENABLED}}
           core-site:
             template: core-site.xml
-            dest: /etc/hadoop/conf/core-site.xml
+            dest: hadoop/conf/core-site.xml
           hdfs-site:
             template: hdfs-site.xml
-            dest: /etc/hadoop/conf/hdfs-site.xml
+            dest: hadoop/conf/hdfs-site.xml
           {{#SECURITY_TRANSPORT_ENCRYPTION_ENABLED}}
           ssl-server:
             template: ssl-server.xml
-            dest: /etc/hadoop/conf/ssl-server.xml
+            dest: hadoop/conf/ssl-server.xml
           ssl-client:
             template: ssl-client.xml
-            dest: /etc/hadoop/conf/ssl-client.xml
+            dest: hadoop/conf/ssl-client.xml
           {{/SECURITY_TRANSPORT_ENCRYPTION_ENABLED}}
         env:
           ZKFC: true
   data:
     count: {{DATA_COUNT}}
 
-    {{#IMAGE_IS_NOBODY}}
-    image: {{HDFS_NOBODY}}
-    {{/IMAGE_IS_NOBODY}}
-    {{^IMAGE_IS_NOBODY}}
-    image: {{HDFS_ROOT}}
-    {{/IMAGE_IS_NOBODY}}
+    image: {{HDFS_IMAGE}}
     
     uris:
       - {{HDFS_JAVA_URI}}
@@ -461,10 +468,13 @@ pods:
         goal: RUNNING
         cmd: |
           set -e
+          mkdir -p $MESOS_SANDBOX/hadoop/conf $MESOS_SANDBOX/hadoop/logs
+          cp -n /etc/hadoop/conf/* $MESOS_SANDBOX/hadoop/conf/
           export JAVA_HOME=$(ls -d $MESOS_SANDBOX/jdk*/jre/)
-          #cp -v hdfs {{TASKCFG_ALL_HDFS_VERSION}}/bin/
+          export HADOOP_CONF_DIR=$MESOS_SANDBOX/hadoop/conf
+          export HADOOP_LOG_DIR=$MESOS_SANDBOX/hadoop/logs
           {{#SECURITY_KERBEROS_ENABLED}}
-          export HADOOP_OPTS="-Djava.security.krb5.conf=/etc/hadoop/conf/krb5.conf $HADOOP_OPTS"
+          export HADOOP_OPTS="-Djava.security.krb5.conf=$MESOS_SANDBOX/hadoop/conf/krb5.conf $HADOOP_OPTS"
           {{#TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
           export HADOOP_OPTS="-Dsun.security.krb5.debug=true $HADOOP_OPTS"
           {{/TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
@@ -492,21 +502,21 @@ pods:
           {{#SECURITY_KERBEROS_ENABLED}}
           krb5-conf:
             template: krb5.conf
-            dest: /etc/hadoop/conf/krb5.conf
+            dest: hadoop/conf/krb5.conf
           {{/SECURITY_KERBEROS_ENABLED}}
           core-site:
             template: core-site.xml
-            dest: /etc/hadoop/conf/core-site.xml
+            dest: hadoop/conf/core-site.xml
           hdfs-site:
             template: hdfs-site.xml
-            dest: /etc/hadoop/conf/hdfs-site.xml
+            dest: hadoop/conf/hdfs-site.xml
           hadoop-metrics2:
             template: data-hadoop-metrics2.properties
-            dest: /etc/hadoop/conf/hadoop-metrics2.properties
+            dest: hadoop/conf/hadoop-metrics2.properties
           {{#SECURITY_TRANSPORT_ENCRYPTION_ENABLED}}
           ssl-server:
             template: ssl-server.xml
-            dest: /etc/hadoop/conf/ssl-server.xml
+            dest: hadoop/conf/ssl-server.xml
           {{/SECURITY_TRANSPORT_ENCRYPTION_ENABLED}}
         env:
           DATANODE: true
@@ -515,12 +525,14 @@ pods:
           cmd: |
             set -e
             export JAVA_HOME=$(ls -d $MESOS_SANDBOX/jdk*/jre/)
+            export HADOOP_CONF_DIR=$MESOS_SANDBOX/hadoop/conf
+            export HADOOP_LOG_DIR=$MESOS_SANDBOX/hadoop/logs
             {{#SECURITY_KERBEROS_ENABLED}}
-            export HADOOP_OPTS="-Djava.security.krb5.conf=/etc/hadoop/conf/krb5.conf $HADOOP_OPTS"
+            export HADOOP_OPTS="-Djava.security.krb5.conf=$MESOS_SANDBOX/hadoop/conf/krb5.conf $HADOOP_OPTS"
             {{#TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
             export HADOOP_OPTS="-Dsun.security.krb5.debug=true $HADOOP_OPTS"
             {{/TASKCFG_ALL_SECURITY_KERBEROS_DEBUG}}
-            KRB5_CONFIG=/etc/hadoop/conf/krb5.conf kinit -k -t $MESOS_SANDBOX/hdfs.keytab $SECURITY_KERBEROS_PRIMARY/$TASK_NAME.$FRAMEWORK_HOST@$SECURITY_KERBEROS_REALM
+            KRB5_CONFIG=$MESOS_SANDBOX/hadoop/conf/krb5.conf kinit -k -t $MESOS_SANDBOX/hdfs.keytab $SECURITY_KERBEROS_PRIMARY/$TASK_NAME.$FRAMEWORK_HOST@$SECURITY_KERBEROS_REALM
             {{/SECURITY_KERBEROS_ENABLED}}
             export TASK_IP=$(./bootstrap --get-task-ip)
             MATCH="$(hdfs dfsadmin -report | grep $TASK_IP | wc -l)"
